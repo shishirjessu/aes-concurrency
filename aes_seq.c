@@ -1,0 +1,61 @@
+#include "aes_seq.h"
+
+
+/* print out 16-byte block as grid */
+void printBlock(unsigned char* state) {
+	for (int x = 0; x < 4; x++) {
+		for (int y = 0; y < 4; y++)
+			printf("%c ", state[y * 4 + x]);
+
+		printf("\n");
+	}
+}
+
+/* the main steps of AES */
+void keyExpansion () {
+
+}
+
+/* switch data with corresponding data in Rijndael s-box */
+void subBytes (unsigned char* state) {
+	for (int x = 0; x < 16; x++)
+		state[x] = sub_bytes_lookup[state[x]];
+}
+
+void addRoundKey () {
+
+}
+
+/* left-shifts a row, data is is column order */
+void leftRotateByOne(unsigned char* state, int row, int size) {
+	char temp = state[row];
+	int x;
+
+	for (x = 0; x < size - 1; x++) {
+		int cur = row;
+		int next = row + 4;
+		printf("%d %d %d\n", cur, next, row);
+		state[cur] = state[next];
+		row += 4;
+	}
+
+	state[row] = temp;
+}
+
+void shiftRows (unsigned char* state) {
+	for (int x = 1; x <= 3; x++) {
+		for (int y = 0; y < x; y++)
+			leftRotateByOne(state, x, 4);
+	}
+}
+
+void mixColumns () {
+
+}
+
+int main (int argc, char** argv) {
+	unsigned char* start = (unsigned char*) "How are u world?";
+	printBlock(start);
+	shiftRows(start);
+	printBlock(start);
+}
