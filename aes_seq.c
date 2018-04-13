@@ -1,4 +1,6 @@
 #include "aes_seq.h"
+#include <stdio.h>
+#include <string.h>
 
 
 /* print out 16-byte block as grid */
@@ -30,7 +32,7 @@ void addRoundKey () {
 void leftRotateByOne(unsigned char* state, int row, int size) {
 	char temp = state[row];
 	int x;
-
+  printf("%c\n", state[2]);
 	for (x = 0; x < size - 1; x++) {
 		int cur = row;
 		int next = row + 4;
@@ -54,8 +56,11 @@ void mixColumns () {
 }
 
 int main (int argc, char** argv) {
-	unsigned char* start = (unsigned char*) "How are u world?";
+  char *str = "How are u world?";
+	unsigned char* start = calloc(1, sizeof(char) * (strlen(str)));
+  memcpy(start, str, strlen(str) * sizeof(char));
 	printBlock(start);
 	shiftRows(start);
 	printBlock(start);
+  free(start);
 }
