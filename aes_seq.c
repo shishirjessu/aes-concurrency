@@ -32,15 +32,14 @@ void addRoundKey () {
 void leftRotateByOne(unsigned char* state, int row, int size) {
 	char temp = state[row];
 	int x;
-  printf("%c\n", state[2]);
 	for (x = 0; x < size - 1; x++) {
 		int cur = row;
 		int next = row + 4;
-		printf("%d %d %d\n", cur, next, row);
+		// printf("%d %d %d\n", cur, next, row);
 		state[cur] = state[next];
 		row += 4;
 	}
-
+  printf("\n");
 	state[row] = temp;
 }
 
