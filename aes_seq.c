@@ -43,13 +43,13 @@ void keyScheduleCore (unsigned char* word, int round) {
 }
 
 
-/* expand them keys brah 
+/* expand them keys brah
    n: number of bytes in the original key
    b: number of total bytes we want
 */
 void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b) {
 	int numExp;
-	for (numExp = 0; numExp < n; numExp++) 
+	for (numExp = 0; numExp < n; numExp++)
 		expandedKeys[numExp] = key[numExp];
 
 	int round = 1;
@@ -66,7 +66,7 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 		for (int x = numExp - n, y = 0; y < 4; y++, x++)
 			temp[y] ^= expandedKeys[x];
 
-		for (int x = 0; x < 4; x++) 
+		for (int x = 0; x < 4; x++)
 			expandedKeys[numExp + x] = temp[x];
 
 		/* now we've expanded 4 more bytes */
@@ -82,7 +82,7 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 			for (int x = numExp - n, y = 0; y < 4; y++, x++)
 				temp[y] ^= expandedKeys[x];
 
-			for (int x = 0; x < 4; x++) 
+			for (int x = 0; x < 4; x++)
 				expandedKeys[numExp + x] = temp[x];
 
 			numExp += 4;
