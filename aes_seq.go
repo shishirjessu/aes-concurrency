@@ -19,6 +19,59 @@ func printBlock (letters []byte) {
   }
 }
 
+func keySchedCore(word []byte, iter int) []byte{
+  output := make([]byte, 4)
+  copy(output[:4], word[:4])
+
+  byte temp = word[0]
+  word[0] = word[1]
+  word[1] = word[2]
+  word[2] = word[3]
+  word[3] = temp
+  
+  for i := 0; i < 4; i++ {
+    output[i] = s_box[output[i]]
+  }
+
+  output[0] = output[0]^rcon[iter]
+
+  return output
+}
+
+func expandKey(key []byte) []byte {
+  var ret = make([]byte, 176)
+
+  copy(ret[:16], key[:16])
+  currInd := 16
+
+  for i := 1; i <= 11; i++ {
+    temp := make([]byte, 4)
+    copy(temp[0:4], ret[currInd-4: currInd])
+    temp = keySchedCore(temp, i)
+
+    for k := 0; k < 4; k++ {
+      temp[k] = temp[k] ^ ret[currInd-16+k]
+    }
+    copy(ret[currInd : currInd+4], temp[0:4])
+    currInd += 4
+
+    for k := 0; k < 3; k++ {
+      copy(temp[0:4], ret[currInd-4: currInd])
+      for j := 0; j < 4; j++ {
+        temp[j] = temp[j] ^ ret[currInd-16+j]
+      }
+      copy(ret[currInd-4: currInd], temp[0:4])
+      currInd += 4
+    }
+
+  }
+
+  return ret
+
+
+
+}
+
 func leftRotateByOne(state []byte, row int, size int)  {
   temp := state[row]
   for i := 0; i < size-1; i++ {
@@ -48,6 +101,7 @@ func main() {
   printBlock(letters)
   shiftRows(letters)
   printBlock(letters)
+  print(s_box)
 
 
 }
