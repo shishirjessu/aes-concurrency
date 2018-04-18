@@ -1,6 +1,4 @@
 #include "aes_seq.h"
-#include <stdio.h>
-#include <string.h>
 
 
 /* print out 16-byte block as grid */
@@ -122,6 +120,14 @@ int main (int argc, char** argv) {
 	printBlock(start);
 	shiftRows(start);
 	printBlock(start);
+
+	char *key = "Thats my Kung Fu";
+	unsigned char* keyBytes = calloc(1, sizeof(char) * (strlen(key)));
+  	memcpy(keyBytes, key, strlen(key) * sizeof(char));
+
+  	unsigned char* expandedKeys = calloc(1, 176);
+
+  	keyExpansion(keyBytes, expandedKeys, 16, 176);
 
   	free(start);
 }
