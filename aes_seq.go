@@ -19,6 +19,25 @@ func printBlock (letters []byte) {
   }
 }
 
+func leftRotateByOne(state []byte, row int, size int)  {
+  temp := state[row]
+  for i := 0; i < size-1; i++ {
+    cur := row
+    next := row + 4
+    state[cur] = state[next]
+    row += 4
+  }
+  state[row] = temp
+}
+
+func shiftRows(state []byte) {
+  for i := 1; i <= 3; i++ {
+    for k := 0; k < i; k++ {
+      leftRotateByOne(state, i, 4)
+    }
+  }
+}
+
 func main() {
   str := "How are u world?"
   print(str)
@@ -26,6 +45,8 @@ func main() {
   for i := 0; i < len(str); i++ {
     letters[i] = str[i]
   }
+  printBlock(letters)
+  shiftRows(letters)
   printBlock(letters)
 
 
