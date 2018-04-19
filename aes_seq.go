@@ -23,11 +23,11 @@ func keySchedCore(word []byte, iter int) []byte{
   output := make([]byte, 4)
   copy(output[:4], word[:4])
 
-  temp := word[0]
-  word[0] = word[1]
-  word[1] = word[2]
-  word[2] = word[3]
-  word[3] = temp
+  temp := output[0]
+  output[0] = output[1]
+  output[1] = output[2]
+  output[2] = output[3]
+  output[3] = temp
 
   for i := 0; i < 4; i++ {
     output[i] = s_box[output[i]]
