@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 /* taken from https://en.wikipedia.org/wiki/Rijndael_S-box*/
 unsigned char sub_bytes_lookup[256] = 
  {
