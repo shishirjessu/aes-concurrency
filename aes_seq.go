@@ -23,6 +23,7 @@ func keySchedCore(word []byte, iter int) []byte{
   output := make([]byte, 4)
   copy(output[:4], word[:4])
 
+
   temp := output[0]
   output[0] = output[1]
   output[1] = output[2]
@@ -39,39 +40,37 @@ func keySchedCore(word []byte, iter int) []byte{
 }
 
 func expandKey(key []byte) []byte {
-  var ret = make([]byte, 176)
 
-  copy(ret[:16], key[:16])
-  currInd := 16
+  keyLen := len(key)
+  numExpandedBytes := 11*keyLen
+
+  var ret = make([]byte, numExpandedBytes)
+  copy(ret[:keyLen], key[:keyLen])
+  currInd := keyLen
 
   for i := 1; i < 11; i++ {
     temp := make([]byte, 4)
     copy(temp[0:4], ret[currInd-4: currInd])
     temp = keySchedCore(temp, i)
-    print("boogie")
-    print(temp)
 
     for k := 0; k < 4; k++ {
-      temp[k] = temp[k] ^ ret[currInd-16+k]
+      temp[k] = temp[k] ^ ret[currInd-keyLen+k]
     }
+
     copy(ret[currInd : currInd+4], temp[0:4])
     currInd += 4
 
     for k := 0; k < 3; k++ {
       copy(temp[0:4], ret[currInd-4: currInd])
       for j := 0; j < 4; j++ {
-        temp[j] = temp[j] ^ ret[currInd-16+j]
+        temp[j] = temp[j] ^ ret[currInd-keyLen+j]
       }
-      copy(ret[currInd-4: currInd], temp[0:4])
+      copy(ret[currInd: currInd+4], temp[0:4])
       currInd += 4
     }
-
   }
-
   print(ret)
   return ret
-
-
 
 }
 
@@ -96,22 +95,22 @@ func shiftRows(state []byte) {
 
 func main() {
   str := "How are u world?"
-  print(str)
+  // print(str)
   letters := make([]byte, len(str))
   for i := 0; i < len(str); i++ {
     letters[i] = str[i]
   }
-  printBlock(letters)
-  shiftRows(letters)
-  printBlock(letters)
+  // printBlock(letters)
+  // shiftRows(letters)
+  // printBlock(letters)
 
   key := "1234567890123456"
   keyBytes := make([]byte, len(key))
   for i := 0; i < len(key); i++ {
     keyBytes[i] = key[i]
   }
-  print()
-  print (keyBytes)
+  // print()
+  // print (keyBytes)
   expandKey(keyBytes)
 
   // print(s_box)
