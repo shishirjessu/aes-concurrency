@@ -39,10 +39,10 @@ func keySchedCore(word []byte, iter int) []byte{
   return output
 }
 
-func expandKey(key []byte) []byte {
+func expandKey(key []byte, numExpandedBytes int) []byte {
 
   keyLen := len(key)
-  numExpandedBytes := 11*keyLen
+
 
   var ret = make([]byte, numExpandedBytes)
   copy(ret[:keyLen], key[:keyLen])
@@ -111,7 +111,7 @@ func main() {
   }
   // print()
   // print (keyBytes)
-  expandKey(keyBytes)
+  expandKey(keyBytes, 176)
 
   // print(s_box)
 
