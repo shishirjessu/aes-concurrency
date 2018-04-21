@@ -118,6 +118,7 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 
 			numExp += 4;
 		}
+    free(temp)
 	}
 }
 
@@ -152,6 +153,8 @@ void mixColumns (unsigned char* state, int n) {
 
 		for (int y = x * 4, z = 0; z < 4; y ++, z++)
 			state[y] = col[z];
+
+    free(col);
 	}
 }
 
@@ -165,5 +168,6 @@ int main (int argc, char** argv) {
 	unsigned char* keyBytes = calloc(1, sizeof(char) * (strlen(key)));
   	memcpy(keyBytes, key, strlen(key) * sizeof(char));
 
-  	free(start);
+	free(start);
+  free(keyBytes)
 }
