@@ -19,6 +19,12 @@ func printBlock (letters []byte) {
   }
 }
 
+func subBytes (output []byte) {
+  for i := 0; i < 4; i++ {
+    output[i] = s_box[output[i]]
+  }
+}
+
 func keySchedCore(word []byte, iter int) []byte{
   output := make([]byte, 4)
   copy(output[:4], word[:4])
@@ -30,9 +36,7 @@ func keySchedCore(word []byte, iter int) []byte{
   output[2] = output[3]
   output[3] = temp
 
-  for i := 0; i < 4; i++ {
-    output[i] = s_box[output[i]]
-  }
+  subBytes(output)
 
   output[0] = output[0]^rcon[iter]
 
