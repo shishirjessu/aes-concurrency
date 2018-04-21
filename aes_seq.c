@@ -118,7 +118,7 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 
 			numExp += 4;
 		}
-    free(temp)
+    free(temp);
 	}
 }
 
@@ -169,5 +169,5 @@ int main (int argc, char** argv) {
   	memcpy(keyBytes, key, strlen(key) * sizeof(char));
 
 	free(start);
-  free(keyBytes)
+  free(keyBytes);
 }
