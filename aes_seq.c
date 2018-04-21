@@ -29,7 +29,7 @@ unsigned char gmul (unsigned char a, unsigned char b) {
 	unsigned char product = 0;
 
 	for (int x = 0; x < 8; x++) {
-		if (b & 0x1) 
+		if (b & 0x1)
 			product ^= a;
 
 		int highBitSet = a & 0x80;
@@ -47,14 +47,14 @@ unsigned char gmul (unsigned char a, unsigned char b) {
 
 void mixSingleColumn(unsigned char* col) {
 	unsigned char temp[4];
-	
-	for (int x = 0; x < 4; x++) 
+
+	for (int x = 0; x < 4; x++)
 		temp[x] = col[x];
-	
+
 	col[0] = gmul(temp[0], 2) ^ gmul(temp[3], 1) ^ gmul(temp[2], 1) ^ gmul(temp[1], 3);
-	col[1] = gmul(temp[1],2) ^ gmul(temp[0],1) ^ gmul(temp[3],1) ^ gmul(temp[2],3);
-	col[2] = gmul(temp[2],2) ^ gmul(temp[1],1) ^ gmul(temp[0],1) ^ gmul(temp[3],3);
-	col[3] = gmul(temp[3],2) ^ gmul(temp[2],1) ^ gmul(temp[1],1) ^ gmul(temp[0],3);
+	col[1] = gmul(temp[1], 2) ^ gmul(temp[0], 1) ^ gmul(temp[3], 1) ^ gmul(temp[2], 3);
+	col[2] = gmul(temp[2], 2) ^ gmul(temp[1], 1) ^ gmul(temp[0], 1) ^ gmul(temp[3], 3);
+	col[3] = gmul(temp[3], 2) ^ gmul(temp[2], 1) ^ gmul(temp[1], 1) ^ gmul(temp[0], 3);
 }
 
 /* the main steps of AES */
@@ -156,7 +156,7 @@ void mixColumns (unsigned char* state, int n) {
 }
 
 int main (int argc, char** argv) {
-  	char str [16] = {0x87, 0x6e, 0x46, 0xa6, 0xf2, 0x4c, 0xe7, 0x8c, 
+  	char str [16] = {0x87, 0x6e, 0x46, 0xa6, 0xf2, 0x4c, 0xe7, 0x8c,
   				0x4d, 0x90, 0x4a, 0xd8, 0x97, 0xec, 0xc3, 0x95};
 	unsigned char* start = calloc(1, sizeof(char) * (strlen(str)));
   	memcpy(start, str, strlen(str) * sizeof(char));
