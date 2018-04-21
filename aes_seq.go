@@ -43,12 +43,11 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
 
   keyLen := len(key)
 
-
   var ret = make([]byte, numExpandedBytes)
   copy(ret[:keyLen], key[:keyLen])
-  currInd := keyLen
+  i := 1
 
-  for i := 1; i < 11; i++ {
+  for currInd := keyLen; currInd < numExpandedBytes; {
     temp := make([]byte, 4)
     copy(temp[0:4], ret[currInd-4: currInd])
     temp = keySchedCore(temp, i)
@@ -68,10 +67,19 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
       copy(ret[currInd: currInd+4], temp[0:4])
       currInd += 4
     }
+    i++
   }
   print(ret)
   return ret
 
+}
+
+func addRoundKey(state []byte, key []byte) []byte {
+  ret := make([]byte, len(state))
+  for i := 0; i < len(ret); i++ {
+    ret[i] = state[i]^key[i]
+  }
+  return ret
 }
 
 func leftRotateByOne(state []byte, row int, size int)  {
