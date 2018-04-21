@@ -1,9 +1,7 @@
 package main
 
 import (
-
   "fmt"
-
 )
 
 var print = fmt.Println
@@ -25,10 +23,51 @@ func subBytes (output []byte) {
   }
 }
 
-func keySchedCore(word []byte, iter int) []byte{
+func gmul(a byte, b byte) byte {
+  var res byte = 0
+
+  for i := 0; i < 8; i++ {
+    if b & 0x1 != 0 {
+      res = res ^ a
+    }
+
+    highbit := a & 0x08
+    a = a << 1
+
+    if highbit != 0{
+      a = 0x1b
+    }
+    b = b >> 1
+  }
+  return res
+}
+
+func mixSingleColumn(column []byte) {
+
+  temp := make([]byte, 4)
+  copy(temp[0:4], column[0:4])
+
+  column[0] = gmul(temp[0], 2) ^ gmul(temp[3], 1) ^ gmul(temp[2], 1) ^ gmul(temp[1], 3)
+  column[1] = gmul(temp[1], 2) ^ gmul(temp[0], 1) ^ gmul(temp[3], 1) ^ gmul(temp[2], 3)
+  column[2] = gmul(temp[2], 2) ^ gmul(temp[1], 1) ^ gmul(temp[0], 1) ^ gmul(temp[3], 3)
+  column[3] = gmul(temp[3], 2) ^ gmul(temp[2], 1) ^ gmul(temp[1], 1) ^ gmul(temp[0], 3)
+
+}
+
+func mixColumns(state []byte, numCols int) {
+  for i := 0; i < numCols; i++ {
+    col := make([]byte, 4)
+    copy(col[0:4], state[(i*4):((i+1)*4)])
+
+    mixSingleColumn(col)
+
+    copy(state[(i*4):((i+1)*4)], col[0:4])
+  }
+}
+
+func keySchedCore(word []byte, iter int) []byte {
   output := make([]byte, 4)
   copy(output[:4], word[:4])
-
 
   temp := output[0]
   output[0] = output[1]
@@ -75,7 +114,6 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
   }
   print(ret)
   return ret
-
 }
 
 func addRoundKey(state []byte, key []byte) []byte {
@@ -107,25 +145,17 @@ func shiftRows(state []byte) {
 
 func main() {
   str := "How are u world?"
-  // print(str)
   letters := make([]byte, len(str))
   for i := 0; i < len(str); i++ {
     letters[i] = str[i]
   }
-  // printBlock(letters)
-  // shiftRows(letters)
-  // printBlock(letters)
 
   key := "1234567890123456"
   keyBytes := make([]byte, len(key))
   for i := 0; i < len(key); i++ {
     keyBytes[i] = key[i]
   }
-  // print()
-  // print (keyBytes)
+
   expandKey(keyBytes, 176)
-
-  // print(s_box)
-
 
 }
