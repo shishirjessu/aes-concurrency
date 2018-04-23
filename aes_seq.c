@@ -118,7 +118,7 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 
 			numExp += 4;
 		}
-    free(temp);
+    	free(temp);
 	}
 }
 
@@ -154,20 +154,47 @@ void mixColumns (unsigned char* state, int n) {
 		for (int y = x * 4, z = 0; z < 4; y ++, z++)
 			state[y] = col[z];
 
-    free(col);
+    	free(col);
 	}
 }
 
 int main (int argc, char** argv) {
-  	char str [16] = {0x87, 0x6e, 0x46, 0xa6, 0xf2, 0x4c, 0xe7, 0x8c,
-  				0x4d, 0x90, 0x4a, 0xd8, 0x97, 0xec, 0xc3, 0x95};
-	unsigned char* start = calloc(1, sizeof(char) * (strlen(str)));
-  	memcpy(start, str, strlen(str) * sizeof(char));
+  	unsigned char* str = "Two One Nine Two";
+  	int len = 16;
+	unsigned char* start = calloc(1, sizeof(char) * len);
+  	memcpy(start, str, len * sizeof(char));
 
-	char *key = "Thats my Kung Fu";
-	unsigned char* keyBytes = calloc(1, sizeof(char) * (strlen(key)));
-  	memcpy(keyBytes, key, strlen(key) * sizeof(char));
+	unsigned char* key = "Thats my Kung Fu";
+	unsigned char* keyBytes = calloc(1, sizeof(char) * len);
+  	memcpy(keyBytes, key, len * sizeof(char));
+
+  	unsigned char* expandedKeys = calloc(1, 176);
+
+  	/* Key expansion - once */
+  	keyExpansion(keyBytes, expandedKeys, 16, 176);
+
+  	for (int x = 0; x < 11; x++) {
+  		for (int y = 0; y < 16; y++)
+  			printf("%x ", expandedKeys[x * 16 + y]);
+  		printf("\n");
+  	}
+  	printf("\n");
+
+  	addRoundKey(start, expandedKeys);
+
+  	for (int x = 1; x < 11; x++) {
+  		subBytes(start);
+  		shiftRows(start);
+
+  		if (x != 10) /* no mixCols on last step */
+  			mixColumns(start, 4);
+
+  		addRoundKey(start, expandedKeys + 16 * x);
+  	} 
+
+  	for (int x = 0; x < 16; x++) 
+  		printf("%x ", start[x]);
 
 	free(start);
-  free(keyBytes);
+  	free(keyBytes);
 }
