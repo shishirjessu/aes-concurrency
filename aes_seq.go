@@ -6,7 +6,7 @@ import (
 
 var print = fmt.Println
 
-func printBlock (letters []byte) {
+func printBlock(letters []byte) {
   for i := 0; i < 4; i++ {
     temp := ""
     for k := 0; k < 4; k++ {
@@ -17,29 +17,38 @@ func printBlock (letters []byte) {
   }
 }
 
-func subBytes (output []byte) {
-  for i := 0; i < 4; i++ {
-    output[i] = s_box[output[i]]
+func subBytes(input []byte) {
+  for i := 0; i < len(input); i++ {
+    input[i] = s_box[input[i]]
   }
 }
 
 func gmul(a byte, b byte) byte {
-  var res byte = 0
-
-  for i := 0; i < 8; i++ {
-    if b & 0x1 != 0 {
-      res = res ^ a
-    }
-
-    highbit := a & 0x08
-    a = a << 1
-
-    if highbit != 0{
-      a = 0x1b
-    }
-    b = b >> 1
+  if b == 1 {
+    return a
   }
-  return res
+  if b == 2 {
+    return gal2[a]
+  }
+  if b == 3 {
+    return gal3[a]
+  }
+  return 0
+  //
+  // for i := 0; i < 8; i++ {
+  //   if b & 0x1 != 0 {
+  //     res = res ^ a
+  //   }
+  //
+  //   highbit := a & 0x08
+  //   a = a << 1
+  //
+  //   if highbit != 0{
+  //     a = 0x1b
+  //   }
+  //   b = b >> 1
+  // }
+  // return res
 }
 
 func mixSingleColumn(column []byte) {
@@ -112,16 +121,14 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
     }
     i++
   }
-  print(ret)
+  // print(ret)
   return ret
 }
 
-func addRoundKey(state []byte, key []byte) []byte {
-  ret := make([]byte, len(state))
-  for i := 0; i < len(ret); i++ {
-    ret[i] = state[i]^key[i]
+func addRoundKey(state []byte, key []byte) {
+  for i := 0; i < len(state); i++ {
+    state[i] = state[i]^key[i]
   }
-  return ret
 }
 
 func leftRotateByOne(state []byte, row int, size int)  {
@@ -144,18 +151,46 @@ func shiftRows(state []byte) {
 }
 
 func main() {
-  str := "How are u world?"
+  str := "Two One Nine Two"
   letters := make([]byte, len(str))
   for i := 0; i < len(str); i++ {
     letters[i] = str[i]
   }
 
-  key := "1234567890123456"
+  key := "Thats my Kung Fu"
   keyBytes := make([]byte, len(key))
   for i := 0; i < len(key); i++ {
     keyBytes[i] = key[i]
   }
 
-  expandKey(keyBytes, 176)
+  expandedKey := expandKey(keyBytes, 176)
+
+  for i := 0; i < 11; i++ {
+    for k := 0; k < 16; k++ {
+      fmt.Printf("%x ", expandedKey[i * 16 + k])
+    }
+    fmt.Printf("\n")
+  }
+  fmt.Printf("\n\n")
+
+  addRoundKey(letters, expandedKey);
+
+
+  for i := 1; i < 11; i++ {
+
+    subBytes(letters)
+    shiftRows(letters)
+
+    if i != 10 {
+      mixColumns(letters, 4)
+    }
+    addRoundKey(letters, expandedKey[16*i:])
+
+  }
+
+  for i := 0; i < len(letters); i++ {
+    fmt.Printf("%x ", letters[i])
+  }
+
 
 }
