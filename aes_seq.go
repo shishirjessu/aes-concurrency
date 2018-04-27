@@ -135,11 +135,34 @@ func shiftRows(state []byte) {
   }
 }
 
+func encrypt(state []byte, expandedKey []byte)  {
+  addRoundKey(state, expandedKey)
+
+  for i := 1; i < 11; i++ {
+    subBytes(state)
+    shiftRows(state)
+
+    if i != 10 {
+      mixColumns(state, 4)
+    }
+    addRoundKey(state, expandedKey[16*i:])
+
+  }
+}
+
 func main() {
-  str := "Two One Nine Two"
-  letters := make([]byte, len(str))
+  str := "Two One Nine Two xyz123"
+  state := make([]byte, len(str))
   for i := 0; i < len(str); i++ {
-    letters[i] = str[i]
+    state[i] = str[i]
+  }
+
+  if len(state) % 16 != 0 {
+    diff := 16 - (len(state) % 16)
+    toAppend := make([]byte, diff)
+    for i := 0; i < diff; i++ {
+      state = append(state, byte(diff))
+    }
   }
 
   key := "Thats my Kung Fu"
@@ -150,31 +173,12 @@ func main() {
 
   expandedKey := expandKey(keyBytes, 176)
 
-  for i := 0; i < 11; i++ {
-    for k := 0; k < 16; k++ {
-      fmt.Printf("%x ", expandedKey[i * 16 + k])
-    }
-    fmt.Printf("\n")
-  }
-  fmt.Printf("\n\n")
-
-  addRoundKey(letters, expandedKey);
-
-
-  for i := 1; i < 11; i++ {
-
-    subBytes(letters)
-    shiftRows(letters)
-
-    if i != 10 {
-      mixColumns(letters, 4)
-    }
-    addRoundKey(letters, expandedKey[16*i:])
-
+  for i := 0; i < len(state); i += 16 {
+    encrypt(state[i:i+16], expandedKey)
   }
 
-  for i := 0; i < len(letters); i++ {
-    fmt.Printf("%x ", letters[i])
+  for i := 0; i < len(state); i++ {
+    fmt.Printf("%x ", state[i])
   }
 
 
