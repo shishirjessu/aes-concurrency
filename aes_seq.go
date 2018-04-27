@@ -7,6 +7,11 @@ import (
 var print = fmt.Println
 var blockSize = 16
 
+var mixColumnChan = make(chan *Params)
+var subBytesChan = make(chan *Params)
+var shiftRowsChan = make(chan *Params)
+var addRoundKeyChan = make(chan *Params)
+
 func printBlock(letters []byte) {
   for i := 0; i < 4; i++ {
     temp := ""
@@ -18,14 +23,18 @@ func printBlock(letters []byte) {
   }
 }
 
-func subBytes(inputPtr *[]byte, c chan bool) {
-  input := *inputPtr
-  for i := 0; i < len(input); i++ {
-    input[i] = s_box[input[i]]
+func subBytesGoRout(statePtr *[]byte, c chan bool) {
+  state := *statePtr
+  for i := 0; i < len(state); i++ {
+    state[i] = s_box[state[i]]
   }
+  c <- true
+}
 
-  if c != nil {
-    c <- true
+func subBytes(statePtr *[]byte) {
+  state := *statePtr
+  for i := 0; i < len(state); i++ {
+    state[i] = s_box[state[i]]
   }
 }
 
@@ -54,15 +63,22 @@ func mixSingleColumn(column []byte) {
 
 }
 
-func mixColumns(statePtr *[]byte, numCols int, c chan bool) {
-  state := *statePtr
-  for i := 0; i < numCols; i++ {
-    col := make([]byte, 4)
-    copy(col[0:4], state[(i*4):((i+1)*4)])
-    mixSingleColumn(col)
-    copy(state[(i*4):((i+1)*4)], col[0:4])
-  }
-  c <- true
+func mixColumns() {
+  // for ;true; {
+    input := <-mixColumnChan
+
+    state := *(input.statePtr)
+    numCols := input.numCols
+    c := input.c
+
+    for i := 0; i < numCols; i++ {
+      col := make([]byte, 4)
+      copy(col[0:4], state[(i*4):((i+1)*4)])
+      mixSingleColumn(col)
+      copy(state[(i*4):((i+1)*4)], col[0:4])
+    }
+    c <- true
+  // }
 }
 
 func keySchedCore(word []byte, iter int) []byte {
@@ -75,7 +91,7 @@ func keySchedCore(word []byte, iter int) []byte {
   output[2] = output[3]
   output[3] = temp
 
-  subBytes(&output, nil)
+  subBytes(&output)
 
   output[0] = output[0]^rcon[iter]
 
@@ -153,12 +169,14 @@ func encrypt(state []byte, expandedKey []byte)  {
   _ = <-c
   for i := 1; i < 11; i++ {
 
-    go subBytes(&state, c)
+    go subBytesGoRout(&state, c)
     _ = <-c
     go shiftRows(&state, c)
     _ = <-c
     if i != 10 {
-      go mixColumns(&state, 4, c)
+      input := Params{statePtr:&state, numCols:4, c:c}
+      go mixColumns()
+      mixColumnChan <- &input
       _ = <-c
     }
     temp := expandedKey[blockSize*i:blockSize*(i+1)]
