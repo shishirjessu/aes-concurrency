@@ -161,8 +161,9 @@ func main() {
     diff := 16 - (len(state) % 16)
     toAppend := make([]byte, diff)
     for i := 0; i < diff; i++ {
-      state = append(state, byte(diff))
+      toAppend[i] = byte(diff)
     }
+    state = append(state, toAppend...)
   }
 
   key := "Thats my Kung Fu"
