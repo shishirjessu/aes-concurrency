@@ -5,6 +5,7 @@ import (
 )
 
 var print = fmt.Println
+var blockSize = 16
 
 func printBlock(letters []byte) {
   for i := 0; i < 4; i++ {
@@ -17,7 +18,8 @@ func printBlock(letters []byte) {
   }
 }
 
-func subBytes(input []byte) {
+func subBytes(inputPtr *[]byte) {
+  input := *inputPtr
   for i := 0; i < len(input); i++ {
     input[i] = s_box[input[i]]
   }
@@ -48,13 +50,12 @@ func mixSingleColumn(column []byte) {
 
 }
 
-func mixColumns(state []byte, numCols int) {
+func mixColumns(statePtr *[]byte, numCols int) {
+  state := *statePtr
   for i := 0; i < numCols; i++ {
     col := make([]byte, 4)
     copy(col[0:4], state[(i*4):((i+1)*4)])
-
     mixSingleColumn(col)
-
     copy(state[(i*4):((i+1)*4)], col[0:4])
   }
 }
@@ -69,7 +70,7 @@ func keySchedCore(word []byte, iter int) []byte {
   output[2] = output[3]
   output[3] = temp
 
-  subBytes(output)
+  subBytes(&output)
 
   output[0] = output[0]^rcon[iter]
 
@@ -106,11 +107,12 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
     }
     i++
   }
-  // print(ret)
   return ret
 }
 
-func addRoundKey(state []byte, key []byte) {
+func addRoundKey(statePtr *[]byte, keyPtr *[]byte) {
+  state := *statePtr
+  key := *keyPtr
   for i := 0; i < len(state); i++ {
     state[i] = state[i]^key[i]
   }
@@ -127,7 +129,8 @@ func leftRotateByOne(state []byte, row int, size int)  {
   state[row] = temp
 }
 
-func shiftRows(state []byte) {
+func shiftRows(statePtr *[]byte) {
+  state := *statePtr
   for i := 1; i <= 3; i++ {
     for k := 0; k < i; k++ {
       leftRotateByOne(state, i, 4)
@@ -136,17 +139,15 @@ func shiftRows(state []byte) {
 }
 
 func encrypt(state []byte, expandedKey []byte)  {
-  addRoundKey(state, expandedKey)
-
+  addRoundKey(&state, &expandedKey)
   for i := 1; i < 11; i++ {
-    subBytes(state)
-    shiftRows(state)
-
+    subBytes(&state)
+    shiftRows(&state)
     if i != 10 {
-      mixColumns(state, 4)
+      mixColumns(&state, 4)
     }
-    addRoundKey(state, expandedKey[16*i:])
-
+    temp := expandedKey[blockSize*i:blockSize*(i+1)]
+    addRoundKey(&state, &temp)
   }
 }
 
@@ -157,8 +158,8 @@ func main() {
     state[i] = str[i]
   }
 
-  if len(state) % 16 != 0 {
-    diff := 16 - (len(state) % 16)
+  if len(state) % blockSize != 0 {
+    diff := blockSize - (len(state) % blockSize)
     toAppend := make([]byte, diff)
     for i := 0; i < diff; i++ {
       toAppend[i] = byte(diff)
@@ -174,8 +175,8 @@ func main() {
 
   expandedKey := expandKey(keyBytes, 176)
 
-  for i := 0; i < len(state); i += 16 {
-    encrypt(state[i:i+16], expandedKey)
+  for i := 0; i < len(state); i += blockSize {
+    encrypt(state[i:i+blockSize], expandedKey)
   }
 
   for i := 0; i < len(state); i++ {
