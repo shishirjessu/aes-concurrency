@@ -34,21 +34,6 @@ func gmul(a byte, b byte) byte {
     return gal3[a]
   }
   return 0
-  //
-  // for i := 0; i < 8; i++ {
-  //   if b & 0x1 != 0 {
-  //     res = res ^ a
-  //   }
-  //
-  //   highbit := a & 0x08
-  //   a = a << 1
-  //
-  //   if highbit != 0{
-  //     a = 0x1b
-  //   }
-  //   b = b >> 1
-  // }
-  // return res
 }
 
 func mixSingleColumn(column []byte) {

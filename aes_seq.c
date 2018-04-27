@@ -26,22 +26,18 @@ void leftRotateByOne(unsigned char* state, int row, int size) {
 }
 
 unsigned char gmul (unsigned char a, unsigned char b) {
-	unsigned char product = 0;
 
-	for (int x = 0; x < 8; x++) {
-		if (b & 0x1)
-			product ^= a;
+  if (b == 1) {
+    return a;
+  }
+  if (b == 2) {
+    return gal2[a];
+  }
+  if (b == 3) {
+    return gal3[a];
+  }
+  return 0;
 
-		int highBitSet = a & 0x80;
-		a <<= 1;
-
-		if (highBitSet == 0x80)
-			a ^= 0x1b;
-
-		b >>= 1;
-	}
-
-	return product;
 }
 
 
@@ -190,9 +186,9 @@ int main (int argc, char** argv) {
   			mixColumns(start, 4);
 
   		addRoundKey(start, expandedKeys + 16 * x);
-  	} 
+  	}
 
-  	for (int x = 0; x < 16; x++) 
+  	for (int x = 0; x < 16; x++)
   		printf("%x ", start[x]);
 
 	free(start);
