@@ -2,6 +2,7 @@ package main
 
 type Params struct {
   statePtr *[]byte
+  expandedKeyPtr *[]byte
   numCols int
   c chan bool
 }

@@ -23,12 +23,19 @@ func printBlock(letters []byte) {
   }
 }
 
-func subBytesGoRout(statePtr *[]byte, c chan bool) {
-  state := *statePtr
-  for i := 0; i < len(state); i++ {
-    state[i] = s_box[state[i]]
-  }
-  c <- true
+func subBytesGoRout() {
+
+  // for ;true; {
+    input := <-subBytesChan
+    state := *(input.statePtr)
+    c := input.c
+
+    for i := 0; i < len(state); i++ {
+      state[i] = s_box[state[i]]
+    }
+    c <- true
+  // }
+
 }
 
 func subBytes(statePtr *[]byte) {
@@ -131,9 +138,13 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
   return ret
 }
 
-func addRoundKey(statePtr *[]byte, keyPtr *[]byte, c chan bool) {
-  state := *statePtr
-  key := *keyPtr
+func addRoundKey() {
+  input := <- addRoundKeyChan
+
+  state := *(input.statePtr)
+  key := *(input.expandedKeyPtr)
+  c := input.c
+
   for i := 0; i < len(state); i++ {
     state[i] = state[i]^key[i]
   }
@@ -151,8 +162,12 @@ func leftRotateByOne(state []byte, row int, size int)  {
   state[row] = temp
 }
 
-func shiftRows(statePtr *[]byte, c chan bool) {
-  state := *statePtr
+func shiftRows() {
+
+  input := <-shiftRowsChan
+  state := *(input.statePtr)
+  c := input.c
+
   for i := 1; i <= 3; i++ {
     for k := 0; k < i; k++ {
       leftRotateByOne(state, i, 4)
@@ -164,23 +179,31 @@ func shiftRows(statePtr *[]byte, c chan bool) {
 func encrypt(state []byte, expandedKey []byte)  {
 
   c := make(chan bool)
+  input := Params{statePtr:&state, expandedKeyPtr:&expandedKey, numCols:4, c:c}
 
-  go addRoundKey(&state, &expandedKey, c)
+  go addRoundKey()
+  addRoundKeyChan <- &input
   _ = <-c
+
   for i := 1; i < 11; i++ {
 
-    go subBytesGoRout(&state, c)
+    go subBytesGoRout()
+    subBytesChan <- &input
     _ = <-c
-    go shiftRows(&state, c)
+
+    go shiftRows()
+    shiftRowsChan <- &input
     _ = <-c
+
     if i != 10 {
-      input := Params{statePtr:&state, numCols:4, c:c}
       go mixColumns()
       mixColumnChan <- &input
       _ = <-c
     }
     temp := expandedKey[blockSize*i:blockSize*(i+1)]
-    go addRoundKey(&state, &temp, c)
+    input.expandedKeyPtr = &temp
+    go addRoundKey()
+    addRoundKeyChan <- &input
     _ = <-c
   }
 }
