@@ -23,69 +23,11 @@ func printBlock(letters []byte) {
   }
 }
 
-func subBytesGoRout() {
-
-  // for ;true; {
-    input := <-subBytesChan
-    state := *(input.statePtr)
-    c := input.c
-
-    for i := 0; i < len(state); i++ {
-      state[i] = s_box[state[i]]
-    }
-    c <- true
-  // }
-
-}
-
 func subBytes(statePtr *[]byte) {
   state := *statePtr
   for i := 0; i < len(state); i++ {
     state[i] = s_box[state[i]]
   }
-}
-
-func gmul(a byte, b byte) byte {
-  if b == 1 {
-    return a
-  }
-  if b == 2 {
-    return gal2[a]
-  }
-  if b == 3 {
-    return gal3[a]
-  }
-  return 0
-}
-
-func mixSingleColumn(column []byte) {
-
-  temp := make([]byte, 4)
-  copy(temp[0:4], column[0:4])
-
-  column[0] = gmul(temp[0], 2) ^ gmul(temp[3], 1) ^ gmul(temp[2], 1) ^ gmul(temp[1], 3)
-  column[1] = gmul(temp[1], 2) ^ gmul(temp[0], 1) ^ gmul(temp[3], 1) ^ gmul(temp[2], 3)
-  column[2] = gmul(temp[2], 2) ^ gmul(temp[1], 1) ^ gmul(temp[0], 1) ^ gmul(temp[3], 3)
-  column[3] = gmul(temp[3], 2) ^ gmul(temp[2], 1) ^ gmul(temp[1], 1) ^ gmul(temp[0], 3)
-
-}
-
-func mixColumns() {
-  // for ;true; {
-    input := <-mixColumnChan
-
-    state := *(input.statePtr)
-    numCols := input.numCols
-    c := input.c
-
-    for i := 0; i < numCols; i++ {
-      col := make([]byte, 4)
-      copy(col[0:4], state[(i*4):((i+1)*4)])
-      mixSingleColumn(col)
-      copy(state[(i*4):((i+1)*4)], col[0:4])
-    }
-    c <- true
-  // }
 }
 
 func keySchedCore(word []byte, iter int) []byte {
@@ -138,17 +80,32 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
   return ret
 }
 
-func addRoundKey() {
-  input := <- addRoundKeyChan
+func subBytesGoRout() {
+  for ;true; {
+    input := <-subBytesChan
+    state := *(input.statePtr)
+    c := input.c
 
-  state := *(input.statePtr)
-  key := *(input.expandedKeyPtr)
-  c := input.c
-
-  for i := 0; i < len(state); i++ {
-    state[i] = state[i]^key[i]
+    for i := 0; i < len(state); i++ {
+      state[i] = s_box[state[i]]
+    }
+    c <- true
   }
-  c <- true
+}
+
+func addRoundKey() {
+  for ;true; {
+    input := <- addRoundKeyChan
+
+    state := *(input.statePtr)
+    key := *(input.expandedKeyPtr)
+    c := input.c
+
+    for i := 0; i < len(state); i++ {
+      state[i] = state[i]^key[i]
+    }
+    c <- true
+  }
 }
 
 func leftRotateByOne(state []byte, row int, size int)  {
@@ -163,46 +120,85 @@ func leftRotateByOne(state []byte, row int, size int)  {
 }
 
 func shiftRows() {
+  for ;true; {
+    input := <-shiftRowsChan
+    state := *(input.statePtr)
+    c := input.c
 
-  input := <-shiftRowsChan
-  state := *(input.statePtr)
-  c := input.c
-
-  for i := 1; i <= 3; i++ {
-    for k := 0; k < i; k++ {
-      leftRotateByOne(state, i, 4)
+    for i := 1; i <= 3; i++ {
+      for k := 0; k < i; k++ {
+        leftRotateByOne(state, i, 4)
+      }
     }
+    c <- true
   }
-  c <- true
 }
 
-func encrypt(state []byte, expandedKey []byte)  {
+func gmul(a byte, b byte) byte {
+  if b == 1 {
+    return a
+  }
+  if b == 2 {
+    return gal2[a]
+  }
+  if b == 3 {
+    return gal3[a]
+  }
+  return 0
+}
 
+func mixSingleColumn(column []byte) {
+
+  temp := make([]byte, 4)
+  copy(temp[0:4], column[0:4])
+
+  column[0] = gmul(temp[0], 2) ^ gmul(temp[3], 1) ^ gmul(temp[2], 1) ^ gmul(temp[1], 3)
+  column[1] = gmul(temp[1], 2) ^ gmul(temp[0], 1) ^ gmul(temp[3], 1) ^ gmul(temp[2], 3)
+  column[2] = gmul(temp[2], 2) ^ gmul(temp[1], 1) ^ gmul(temp[0], 1) ^ gmul(temp[3], 3)
+  column[3] = gmul(temp[3], 2) ^ gmul(temp[2], 1) ^ gmul(temp[1], 1) ^ gmul(temp[0], 3)
+
+}
+
+func mixColumns() {
+  for ;true; {
+    input := <-mixColumnChan
+
+    state := *(input.statePtr)
+    numCols := input.numCols
+    c := input.c
+
+    for i := 0; i < numCols; i++ {
+      col := make([]byte, 4)
+      copy(col[0:4], state[(i*4):((i+1)*4)])
+      mixSingleColumn(col)
+      copy(state[(i*4):((i+1)*4)], col[0:4])
+    }
+    c <- true
+  }
+}
+
+
+func encrypt(state []byte, expandedKey []byte)  {
   c := make(chan bool)
   input := Params{statePtr:&state, expandedKeyPtr:&expandedKey, numCols:4, c:c}
 
-  go addRoundKey()
   addRoundKeyChan <- &input
   _ = <-c
 
   for i := 1; i < 11; i++ {
 
-    go subBytesGoRout()
     subBytesChan <- &input
     _ = <-c
 
-    go shiftRows()
     shiftRowsChan <- &input
     _ = <-c
 
     if i != 10 {
-      go mixColumns()
       mixColumnChan <- &input
       _ = <-c
     }
     temp := expandedKey[blockSize*i:blockSize*(i+1)]
     input.expandedKeyPtr = &temp
-    go addRoundKey()
     addRoundKeyChan <- &input
     _ = <-c
   }
@@ -232,6 +228,11 @@ func main() {
 
   expandedKey := expandKey(keyBytes, 176)
 
+  go subBytesGoRout()
+  go shiftRows()
+  go mixColumns()
+  go addRoundKey()
+
   for i := 0; i < len(state); i += blockSize {
     encrypt(state[i:i+blockSize], expandedKey)
   }
@@ -239,6 +240,4 @@ func main() {
   for i := 0; i < len(state); i++ {
     fmt.Printf("%x ", state[i])
   }
-
-
 }
