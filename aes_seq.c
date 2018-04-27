@@ -154,9 +154,55 @@ void mixColumns (unsigned char* state, int n) {
 	}
 }
 
+void encrypt(unsigned char* state, unsigned char* expandedKeys) {
+	addRoundKey(state, expandedKeys);
+
+  	for (int x = 1; x < 11; x++) {
+  		subBytes(state);
+  		shiftRows(state);
+
+  		if (x != 10) /* no mixCols on last step */
+  			mixColumns(state, 4);
+
+  		addRoundKey(state, expandedKeys + 16 * x);
+  	}
+}
+
+void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char* key) {
+	/* to get correct size for padded buffer */
+	int numBlocks = (stateLength / blockSize) + (stateLength % blockSize != 0);
+	int bufferSize = numBlocks * blockSize;
+
+	unsigned char* result = calloc(1,  bufferSize);
+
+	int x;
+	for (x = 0; x < stateLength; x++)
+		result[x] = state[x];
+
+	/* we need even block sizes, so we will pad any uneven block */
+	char diff = blockSize - (stateLength % blockSize);
+	printf("diff: %d\n", diff);
+	while (x < bufferSize) {
+		result[x] = diff;
+		x++;
+	}
+
+	unsigned char* expandedKeys = calloc(1, 176);
+
+	/* Key expansion - once */
+  	keyExpansion(key, expandedKeys, 16, 176);
+
+  	for (int x = 0; x < bufferSize; x += blockSize) {
+  		encrypt(result + x, expandedKeys);
+  	}
+
+  	for (int x = 0; x < bufferSize; x++)
+  		printf("%x\n", result[x]);
+}
+
 int main (int argc, char** argv) {
-  	unsigned char* str = "Two One Nine Two";
-  	int len = 16;
+  	unsigned char* str = "Two One Nine Two xyz123";
+  	int len = strlen((const char*)str);
 	unsigned char* start = calloc(1, sizeof(char) * len);
   	memcpy(start, str, len * sizeof(char));
 
@@ -164,32 +210,7 @@ int main (int argc, char** argv) {
 	unsigned char* keyBytes = calloc(1, sizeof(char) * len);
   	memcpy(keyBytes, key, len * sizeof(char));
 
-  	unsigned char* expandedKeys = calloc(1, 176);
-
-  	/* Key expansion - once */
-  	keyExpansion(keyBytes, expandedKeys, 16, 176);
-
-  	for (int x = 0; x < 11; x++) {
-  		for (int y = 0; y < 16; y++)
-  			printf("%x ", expandedKeys[x * 16 + y]);
-  		printf("\n");
-  	}
-  	printf("\n");
-
-  	addRoundKey(start, expandedKeys);
-
-  	for (int x = 1; x < 11; x++) {
-  		subBytes(start);
-  		shiftRows(start);
-
-  		if (x != 10) /* no mixCols on last step */
-  			mixColumns(start, 4);
-
-  		addRoundKey(start, expandedKeys + 16 * x);
-  	}
-
-  	for (int x = 0; x < 16; x++)
-  		printf("%x ", start[x]);
+  	runAES(start, len, 16, keyBytes);
 
 	free(start);
   	free(keyBytes);
