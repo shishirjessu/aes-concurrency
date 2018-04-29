@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "encoding/binary"
 )
 
 var print = fmt.Println
@@ -138,7 +139,13 @@ func shiftRows(statePtr *[]byte) {
   }
 }
 
-func encrypt(state []byte, expandedKey []byte)  {
+func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte)  {
+
+  state := make([]byte, 16)
+
+  binary.LittleEndian.PutUint64(state[8:], counter)
+  binary.LittleEndian.PutUint64(state[:8], nonce)
+
   addRoundKey(&state, &expandedKey)
   for i := 1; i < 11; i++ {
     subBytes(&state)
@@ -149,6 +156,12 @@ func encrypt(state []byte, expandedKey []byte)  {
     temp := expandedKey[blockSize*i:blockSize*(i+1)]
     addRoundKey(&state, &temp)
   }
+
+
+  for i := 0; i < len(plaintext); i++ {
+    plaintext[i] = plaintext[i]^state[i]
+  }
+
 }
 
 func main() {
@@ -175,8 +188,12 @@ func main() {
 
   expandedKey := expandKey(keyBytes, 176)
 
+  var nonce uint64 = 0xAAAAAAAAAAAAAAAA
+  counter := 0
+
   for i := 0; i < len(state); i += blockSize {
-    encrypt(state[i:i+blockSize], expandedKey)
+    encrypt(nonce, uint64(counter), expandedKey, state[i:i+blockSize])
+    counter++
   }
 
   for i := 0; i < len(state); i++ {
