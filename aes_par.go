@@ -180,8 +180,7 @@ func mixColumns() {
 }
 
 
-func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte, wg
-  *sync.WaitGroup)  {
+func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte, wg *sync.WaitGroup) {
 
   state := make([]byte, blockSize)
 
