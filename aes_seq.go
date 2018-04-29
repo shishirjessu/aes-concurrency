@@ -143,8 +143,8 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte)
 
   state := make([]byte, 16)
 
-  binary.LittleEndian.PutUint64(state[8:], counter)
-  binary.LittleEndian.PutUint64(state[:8], nonce)
+  binary.LittleEndian.PutUint64(state[:8], counter)
+  binary.LittleEndian.PutUint64(state[8:], nonce)
 
   addRoundKey(&state, &expandedKey)
   for i := 1; i < 11; i++ {
