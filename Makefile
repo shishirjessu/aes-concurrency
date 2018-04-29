@@ -10,4 +10,4 @@ run_go_seq:
 	go run useful_stuff.go aes_seq.go
 
 run_go_par:
-	go run useful_stuff.go aes_seq.go
+	go run useful_stuff.go aes_par.go

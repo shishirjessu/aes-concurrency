@@ -2,6 +2,8 @@ package main
 
 import (
   "fmt"
+  "encoding/binary"
+  "sync"
 )
 
 var print = fmt.Println
@@ -178,7 +180,14 @@ func mixColumns() {
 }
 
 
-func encrypt(state []byte, expandedKey []byte)  {
+func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte, wg
+  *sync.WaitGroup)  {
+
+  state := make([]byte, blockSize)
+
+  binary.LittleEndian.PutUint64(state[:8], counter)
+  binary.LittleEndian.PutUint64(state[8:], nonce)
+
   c := make(chan bool)
   input := Params{statePtr:&state, expandedKeyPtr:&expandedKey, numCols:4, c:c}
 
@@ -202,6 +211,12 @@ func encrypt(state []byte, expandedKey []byte)  {
     addRoundKeyChan <- &input
     _ = <-c
   }
+
+  for i := 0; i < len(plaintext); i++ {
+    plaintext[i] = plaintext[i]^state[i]
+  }
+  (*wg).Done()
+
 }
 
 func main() {
@@ -228,14 +243,24 @@ func main() {
 
   expandedKey := expandKey(keyBytes, 176)
 
-  go subBytesGoRout()
-  go shiftRows()
-  go mixColumns()
-  go addRoundKey()
+  for i := 0; i < 2; i++ {
+    go subBytesGoRout()
+    go shiftRows()
+    go mixColumns()
+    go addRoundKey()
+  }
+
+  var nonce uint64 = 0xAAAAAAAAAAAAAAAA
+  counter := 0
+
+  var wg sync.WaitGroup
 
   for i := 0; i < len(state); i += blockSize {
-    encrypt(state[i:i+blockSize], expandedKey)
+    go encrypt(nonce, uint64(counter), expandedKey, state[i:i+blockSize], &wg)
+    counter++
+    wg.Add(1)
   }
+  wg.Wait()
 
   for i := 0; i < len(state); i++ {
     fmt.Printf("%x ", state[i])
