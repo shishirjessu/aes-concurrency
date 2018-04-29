@@ -1,6 +1,5 @@
 #include "aes_seq.h"
 
-
 /* print out 16-byte block as grid */
 void printBlock(unsigned char* state) {
 	for (int x = 0; x < 4; x++) {
@@ -26,18 +25,11 @@ void leftRotateByOne(unsigned char* state, int row, int size) {
 }
 
 unsigned char gmul (unsigned char a, unsigned char b) {
-
-  if (b == 1) {
-    return a;
-  }
-  if (b == 2) {
-    return gal2[a];
-  }
-  if (b == 3) {
-    return gal3[a];
-  }
+  if (b == 1) return a;
+  if (b == 2) return gal2[a];
+  if (b == 3) return gal3[a];
+  
   return 0;
-
 }
 
 
@@ -129,6 +121,10 @@ void addRoundKey (unsigned char* state, unsigned char* key) {
 		state[x] ^= key[x];
 }
 
+void xor (unsigned char* a, unsigned char* b) {
+	addRoundKey(a, b);
+}
+
 void shiftRows (unsigned char* state) {
 	for (int x = 1; x <= 3; x++) {
 		for (int y = 0; y < x; y++)
@@ -154,18 +150,29 @@ void mixColumns (unsigned char* state, int n) {
 	}
 }
 
-void encrypt(unsigned char* state, unsigned char* expandedKeys) {
-	addRoundKey(state, expandedKeys);
+void encrypt(unsigned char* state, unsigned char* expandedKeys, long cVal) {
+
+	long* counter = calloc(sizeof(long), 2);
+	counter[0] = nonce;
+	counter[1] = cVal;
+
+	unsigned char* counterState = (unsigned char*) counter;
+	printf("counter before: %lx %lx\n", counter[0], counter[1]);
+
+	addRoundKey(counterState, expandedKeys);
 
   	for (int x = 1; x < 11; x++) {
-  		subBytes(state);
-  		shiftRows(state);
+  		subBytes(counterState);
+  		shiftRows(counterState);
 
   		if (x != 10) /* no mixCols on last step */
-  			mixColumns(state, 4);
+  			mixColumns(counterState, 4);
 
-  		addRoundKey(state, expandedKeys + 16 * x);
+  		addRoundKey(counterState, expandedKeys + 16 * x);
   	}
+
+  	xor(state, counterState);
+  	free(counterState);
 }
 
 void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char* key) {
@@ -193,7 +200,7 @@ void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char*
   	keyExpansion(key, expandedKeys, 16, 176);
 
   	for (int x = 0; x < bufferSize; x += blockSize) {
-  		encrypt(result + x, expandedKeys);
+  		encrypt(result + x, expandedKeys, (x / blockSize));
   	}
 
   	for (int x = 0; x < bufferSize; x++)
