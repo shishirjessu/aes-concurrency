@@ -4,6 +4,10 @@ import (
   "fmt"
   "encoding/binary"
   "sync"
+  "io/ioutil"
+  "os"
+  "time"
+  "strconv"
 )
 
 var print = fmt.Println
@@ -13,17 +17,6 @@ var mixColumnChan = make(chan *Params)
 var subBytesChan = make(chan *Params)
 var shiftRowsChan = make(chan *Params)
 var addRoundKeyChan = make(chan *Params)
-
-func printBlock(letters []byte) {
-  for i := 0; i < 4; i++ {
-    temp := ""
-    for k := 0; k < 4; k++ {
-      temp += string(letters[k*4 + i])
-      temp += ""
-    }
-    print(temp)
-  }
-}
 
 func subBytes(statePtr *[]byte) {
   state := *statePtr
@@ -184,9 +177,12 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte,
 
   state := make([]byte, blockSize)
 
+  //https://stackoverflow.com/questions/35371385/how-can-i-convert-an-int64-into-a-byte-array-in-go
+
   binary.LittleEndian.PutUint64(state[:8], counter)
   binary.LittleEndian.PutUint64(state[8:], nonce)
 
+  //channel to allow workers to notify corresponding encrypt routine when done
   c := make(chan bool)
   input := Params{statePtr:&state, expandedKeyPtr:&expandedKey, numCols:4, c:c}
 
@@ -219,12 +215,20 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte,
 }
 
 func main() {
-  str := "Two One Nine Two xyz123"
-  state := make([]byte, len(str))
-  for i := 0; i < len(str); i++ {
-    state[i] = str[i]
+
+  //cut off anything thats longer than the key
+  keyBytes, err := ioutil.ReadFile(os.Args[1])
+  if err != nil {
+    panic(err)
+  }
+  keyBytes = keyBytes[0:16]
+
+  state, err := ioutil.ReadFile(os.Args[2])
+  if err != nil {
+    panic(err)
   }
 
+  //padding to the end by the number of padded bytes
   if len(state) % blockSize != 0 {
     diff := blockSize - (len(state) % blockSize)
     toAppend := make([]byte, diff)
@@ -234,25 +238,28 @@ func main() {
     state = append(state, toAppend...)
   }
 
-  key := "Thats my Kung Fu"
-  keyBytes := make([]byte, len(key))
-  for i := 0; i < len(key); i++ {
-    keyBytes[i] = key[i]
+  //number of workers for each task
+  temp, err := strconv.Atoi(os.Args[3])
+  if err != nil {
+    panic(err)
   }
+  numWorkers := temp
 
-  expandedKey := expandKey(keyBytes, 176)
-
-  for i := 0; i < 2; i++ {
+  for i := 0; i < numWorkers; i++ {
     go subBytesGoRout()
     go shiftRows()
     go mixColumns()
     go addRoundKey()
   }
 
+  expandedKey := expandKey(keyBytes, 176)
+
   var nonce uint64 = 0xAAAAAAAAAAAAAAAA
   counter := 0
 
   var wg sync.WaitGroup
+
+  start := time.Now()
 
   for i := 0; i < len(state); i += blockSize {
     go encrypt(nonce, uint64(counter), expandedKey, state[i:i+blockSize], &wg)
@@ -260,6 +267,10 @@ func main() {
     wg.Add(1)
   }
   wg.Wait()
+
+  end := time.Now()
+
+  fmt.Printf("%d\n", end.Sub(start).Nanoseconds())
 
   for i := 0; i < len(state); i++ {
     fmt.Printf("%x ", state[i])

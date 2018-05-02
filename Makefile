@@ -6,8 +6,8 @@ clean:
 run:
 	./aes_seq
 
-run_go_seq:
-	go run useful_stuff.go aes_seq.go
+run_go_seq_sm:
+	go run useful_stuff.go aes_seq.go input/key.txt input/small.txt
 
-run_go_par:
-	go run useful_stuff.go aes_par.go
+run_go_par_sm:
+	go run useful_stuff.go aes_par.go input/key.txt input/small.txt $(workers)

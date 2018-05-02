@@ -3,21 +3,13 @@ package main
 import (
   "fmt"
   "encoding/binary"
+  "io/ioutil"
+  "os"
+  "time"
 )
 
 var print = fmt.Println
 var blockSize = 16
-
-func printBlock(letters []byte) {
-  for i := 0; i < 4; i++ {
-    temp := ""
-    for k := 0; k < 4; k++ {
-      temp += string(letters[k*4 + i])
-      temp += ""
-    }
-    print(temp)
-  }
-}
 
 func subBytes(inputPtr *[]byte) {
   input := *inputPtr
@@ -157,7 +149,6 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte)
     addRoundKey(&state, &temp)
   }
 
-
   for i := 0; i < len(plaintext); i++ {
     plaintext[i] = plaintext[i]^state[i]
   }
@@ -165,12 +156,20 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte)
 }
 
 func main() {
-  str := "Two One Nine Two xyz123"
-  state := make([]byte, len(str))
-  for i := 0; i < len(str); i++ {
-    state[i] = str[i]
+
+  //cut off anything thats longer than the key
+  keyBytes, err := ioutil.ReadFile(os.Args[1])
+  if err != nil {
+    panic(err)
+  }
+  keyBytes = keyBytes[0:16]
+
+  state, err := ioutil.ReadFile(os.Args[2])
+  if err != nil {
+    panic(err)
   }
 
+  //padding to the end by the number of padded bytes
   if len(state) % blockSize != 0 {
     diff := blockSize - (len(state) % blockSize)
     toAppend := make([]byte, diff)
@@ -180,25 +179,23 @@ func main() {
     state = append(state, toAppend...)
   }
 
-  key := "Thats my Kung Fu"
-  keyBytes := make([]byte, len(key))
-  for i := 0; i < len(key); i++ {
-    keyBytes[i] = key[i]
-  }
-
   expandedKey := expandKey(keyBytes, 176)
 
   var nonce uint64 = 0xAAAAAAAAAAAAAAAA
   counter := 0
+
+  start := time.Now()
 
   for i := 0; i < len(state); i += blockSize {
     encrypt(nonce, uint64(counter), expandedKey, state[i:i+blockSize])
     counter++
   }
 
+  end := time.Now()
+  fmt.Printf("%d\n", end.Sub(start).Nanoseconds())
+
   for i := 0; i < len(state); i++ {
     fmt.Printf("%x ", state[i])
   }
-
 
 }
