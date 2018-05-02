@@ -194,8 +194,8 @@ func main() {
   end := time.Now()
   fmt.Printf("%d\n", end.Sub(start).Nanoseconds())
 
-  for i := 0; i < len(state); i++ {
-    fmt.Printf("%x ", state[i])
-  }
+  // for i := 0; i < len(state); i++ {
+  //   fmt.Printf("%x ", state[i])
+  // }
 
 }
