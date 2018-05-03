@@ -25,13 +25,13 @@ run_c_seq_lg:
 	./aes_seq $(keypath) $(lgpath)
 
 run_c_seq_xlg:
-	./aes-ctr $(keypath) $(xlgpath)
+	./aes_seq $(keypath) $(xlgpath)
 
 run_c_seq_xxlg:
-	./aes-ctr $(keypath) $(xxlgpath)
+	./aes_seq $(keypath) $(xxlgpath)
 
 run_c_seq_xxxlg:
-	./aes-ctr $(keypath) $(xxxlgpath)
+	./aes_seq $(keypath) $(xxxlgpath)
 
 run_c_par_sm:
 	./aes-ctr $(keypath) $(smallpath)
