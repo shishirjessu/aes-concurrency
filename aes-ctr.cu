@@ -1,12 +1,19 @@
+#include "aes-ctr.cuh"
 #include "aes_seq.h"
-#include <time.h>
 
+#define MAX_THREADS 1024
 
-long nonce = 0xaaaaaaaaaaaaaaaa;
-clock_t start, end;
-double cpu_time_used;
+void err_chk() {
+	cudaDeviceSynchronize();
+	cudaError_t err = cudaGetLastError();
+	if (err != cudaSuccess) 
+		printf("Error: %s\n", cudaGetErrorString(err));
+	else
+		printf("%s\n", "cudaSuccess");
+}
+
 /* print out 16-byte block as grid */
-void printBlock(unsigned char* state) {
+__device__ void printBlock(unsigned char* state) {
 	for (int x = 0; x < 4; x++) {
 		for (int y = 0; y < 4; y++)
 			printf("%x ", state[y * 4 + x]);
@@ -16,7 +23,7 @@ void printBlock(unsigned char* state) {
 }
 
 /* left-shifts a row, data is is column order */
-void leftRotateByOne(unsigned char* state, int row, int size) {
+__device__ void leftRotateByOne(unsigned char* state, int row, int size) {
 	char temp = state[row];
 	int x;
 	for (x = 0; x < size - 1; x++) {
@@ -29,16 +36,16 @@ void leftRotateByOne(unsigned char* state, int row, int size) {
 	state[row] = temp;
 }
 
-unsigned char gmul (unsigned char a, unsigned char b) {
+__device__ unsigned char gmul (unsigned char a, unsigned char b) {
   if (b == 1) return a;
-  if (b == 2) return gal2[a];
-  if (b == 3) return gal3[a];
+  if (b == 2) return d_gal2[a];
+  if (b == 3) return d_gal3[a];
   
   return 0;
 }
 
 
-void mixSingleColumn(unsigned char* col) {
+__device__ void mixSingleColumn(unsigned char* col) {
 	unsigned char temp[4];
 
 	for (int x = 0; x < 4; x++)
@@ -79,7 +86,8 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 	int round = 1;
 	while (numExp < b) {
 		/* copy over the last 4 bytes of the expanded key to temp */
-		unsigned char* temp = (unsigned char*) calloc(1, 4);
+		unsigned char temp[4] = {0, 0, 0, 0};
+		//unsigned char* temp = (unsigned char*) calloc(1, 4);
 		for (int x = numExp - 4, y = 0; y < 4; x++, y++)
 			temp[y] = expandedKeys[x];
 
@@ -111,26 +119,25 @@ void keyExpansion (unsigned char* key, unsigned char* expandedKeys, int n, int b
 
 			numExp += 4;
 		}
-    	free(temp);
 	}
 }
 
 /* switch data with corresponding data in Rijndael s-box */
-void subBytes (unsigned char* state) {
+__device__ void subBytes (unsigned char* state) {
 	for (int x = 0; x < 16; x++)
-		state[x] = sub_bytes_lookup[state[x]];
+		state[x] = d_sub_bytes_lookup[state[x]];
 }
 
-void addRoundKey (unsigned char* state, unsigned char* key) {
+__device__ void addRoundKey (unsigned char* state, unsigned char* key) {
 	for (int x = 0; x < 16; x++)
 		state[x] ^= key[x];
 }
 
-void xor (unsigned char* a, unsigned char* b) {
+__device__ void xOr (unsigned char* a, unsigned char* b) {
 	addRoundKey(a, b);
 }
 
-void shiftRows (unsigned char* state) {
+__device__ void shiftRows (unsigned char* state) {
 	for (int x = 1; x <= 3; x++) {
 		for (int y = 0; y < x; y++)
 			leftRotateByOne(state, x, 4);
@@ -139,9 +146,10 @@ void shiftRows (unsigned char* state) {
 
 /* perform the mix columns operation
    n: the number of columns */
-void mixColumns (unsigned char* state, int n) {
+__device__ void mixColumns (unsigned char* state, int n) {
 	for (int x = 0; x < n; x++) {
-		unsigned char* col = (unsigned char*) calloc(1, 4);
+		unsigned char col [4] = {0, 0, 0, 0};
+		//unsigned char* col = (unsigned char*) calloc(1, 4);
 		for (int y = x * 4, z = 0; z < 4; y ++, z++) {
 			col[z] = state[y];
 		}
@@ -155,28 +163,46 @@ void mixColumns (unsigned char* state, int n) {
 	}
 }
 
-void encrypt(unsigned char* state, unsigned char* expandedKeys, long cVal) {
+__global__ void encrypt(unsigned char* state, unsigned char* expandedKeys, int bufferSize) {
+	long cVal = blockIdx.x*blockDim.x+threadIdx.x;
+	__syncthreads();
+	// if (cVal == 0) {
+	// 	for (int x = 0; x < bufferSize; x++)
+ //  			printf("%x\n", state[x]);
+	// }
+	__syncthreads();
 
-	long* counter = (long*) calloc(sizeof(long), 2);
-	counter[1] = nonce;
+	long nonce = 0xaaaaaaaaaaaaaaaa;
+
+	long counter [2];
+
 	counter[0] = cVal;
+	counter[1] = nonce;
 
 	unsigned char* counterState = (unsigned char*) counter;
 
 	addRoundKey(counterState, expandedKeys);
 
-  	for (int x = 1; x < 11; x++) {
-  		subBytes(counterState);
-  		shiftRows(counterState);
+	for (int x = 1; x < 11; x++) {
+		subBytes(counterState);
+		shiftRows(counterState);
 
-  		if (x != 10) /* no mixCols on last step */
-  			mixColumns(counterState, 4);
+		if (x != 10)
+			mixColumns(counterState, 4);
 
-  		addRoundKey(counterState, expandedKeys + 16 * x);
-  	}
+		addRoundKey(counterState, expandedKeys + 16 * x);
+	}
 
-  	xor(state, counterState);
-  	free(counterState);
+	int blockSize = 16;
+	unsigned char* toXor = state + (blockSize * cVal);
+
+	xOr(toXor, counterState);
+
+	__syncthreads();
+	// if (cVal == 0) {
+	// 	for (int x = 0; x < bufferSize; x++)
+ //  			printf("%d %x\n", x, state[x]);
+	// }
 }
 
 void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char* key) {
@@ -197,43 +223,63 @@ void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char*
 		x++;
 	}
 
-	unsigned char* expandedKeys = (unsigned char*) calloc(1, 176);
+	int numExpandedKeyBytes = 176;
+
+	unsigned char* expandedKeys = (unsigned char*) calloc(1, numExpandedKeyBytes);
 
 	/* Key expansion - once */
-  	keyExpansion(key, expandedKeys, 16, 176);
+  	keyExpansion(key, expandedKeys, 16, numExpandedKeyBytes);
 
-  	start = clock();
-  	for (int x = 0; x < bufferSize; x += blockSize) {
-  		encrypt(result + x, expandedKeys, (x / blockSize));
-  	}
-  	end = clock();
-	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+  	/* Throw stuff onto GPU */
+  	unsigned char *dState, *dExpandedKeys; /* device ptrs */
+  	cudaMalloc((void**)&dState, bufferSize);
+  	err_chk();
 
-	printf("%lf\n", cpu_time_used);
+  	cudaMemcpy(dState, result, bufferSize, cudaMemcpyHostToDevice);
+  	err_chk();
 
-  	// for (int x = 0; x < bufferSize; x++)
-  	// 	printf("%x\n", result[x]);
+  	cudaMalloc((void**)&dExpandedKeys, numExpandedKeyBytes);
+  	err_chk();
+
+  	cudaMemcpy(dExpandedKeys, expandedKeys, numExpandedKeyBytes, cudaMemcpyHostToDevice);
+  	err_chk();
+
+  	int numThreadBlocks = (numBlocks + MAX_THREADS - 1) / MAX_THREADS;
+  	int threadsPerBlock = numBlocks / numThreadBlocks;
+
+  	printf("num threads: %d %d %d\n", numThreadBlocks, threadsPerBlock, numThreadBlocks * threadsPerBlock);
+
+  	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	cudaEventRecord(start);
+
+  	encrypt <<<numThreadBlocks, threadsPerBlock>>> (dState, dExpandedKeys, bufferSize);
+  	err_chk();
+
+  	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
+	float milliseconds = 0;
+	cudaEventElapsedTime(&milliseconds, start, stop);
+	printf("%f\n", milliseconds/1000.0);
 }
-
 
 char* read_input(char* input) {
 	/* Open file and read in first 2 things*/
 	FILE* input_file = fopen(input, "r");
-
 	char* result;
 	if (input_file != NULL) {
 		fseek(input_file, 0L, SEEK_END);
 		long s = ftell(input_file);
 		rewind(input_file);
 
-		result = malloc(s);
+		result = (char*) malloc(s);
 		if (result != NULL) {
 			fread(result, s, 1, input_file);
 			fclose(input_file);
 			input_file = NULL;
 		}
 	}
-
 
 	if (input_file != NULL) fclose(input_file);
 
@@ -252,4 +298,7 @@ int main (int argc, char** argv) {
 	char* state = read_input(stateFile);
 
   	runAES((unsigned char*) state, strlen(state), 16, (unsigned char*) key);
+
+	free(state);
+  	free(key);
 }
