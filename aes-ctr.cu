@@ -261,7 +261,7 @@ void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char*
 	cudaEventSynchronize(stop);
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
-	printf("%f\n", milliseconds/1000.0);
+	printf("%f\n", milliseconds);
 }
 
 char* read_input(char* input) {

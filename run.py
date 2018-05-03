@@ -15,6 +15,7 @@ par_times_go = []
 
 for i in range(len(sizes)):
     size = sizes[i]
+	print (i, size)
     temp = []
     for _ in range(10):
         temp.append(float(check_output((rules[0] + types[0] + size), shell=True).decode().split('\n')[1]))

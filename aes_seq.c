@@ -209,7 +209,7 @@ void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char*
   	end = clock();
 	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-	printf("%lf\n", cpu_time_used);
+	printf("%lf\n", 1000.0 * cpu_time_used);
 
   	// for (int x = 0; x < bufferSize; x++)
   	// 	printf("%x\n", result[x]);
