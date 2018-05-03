@@ -1,6 +1,6 @@
 from subprocess import check_output
 
-rules = ['run_c_', 'run_go_']
+rules = ['make run_c_', 'make run_go_']
 types = ['seq_', 'par_']
 sizes = ['sm', 'md', 'lg', 'xlg', 'xxlg', 'xxxlg']
 
