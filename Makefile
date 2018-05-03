@@ -4,6 +4,7 @@ medpath = input/med.txt
 lgpath = input/lg.txt
 xlgpath = input/xlg.txt
 xxlgpath = input/xxlg.txt
+xxxlgpath = input/xxxl.txt
 workers = 1
 
 all: aes_seq.c
@@ -44,3 +45,9 @@ run_go_seq_xxlg:
 
 run_go_par_xxlg:
 	go run useful_stuff.go aes_par.go $(keypath) $(xxlgpath) $(workers)
+
+run_go_seq_xxxlg:
+	go run useful_stuff.go aes_seq.go $(keypath) $(xxxlgpath)
+
+run_go_par_xxxlg:
+	go run useful_stuff.go aes_par.go $(keypath) $(xxxlgpath) $(workers)

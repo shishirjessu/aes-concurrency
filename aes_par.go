@@ -173,7 +173,7 @@ func mixColumns() {
 }
 
 
-func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte, wg *sync.WaitGroup) {
+func encrypt(nonce uint64, counter uint64, expandedKeyPtr *[]byte, plaintext []byte, wg *sync.WaitGroup) {
 
   state := make([]byte, blockSize)
 
@@ -184,7 +184,7 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte,
 
   //channel to allow workers to notify corresponding encrypt routine when done
   c := make(chan bool)
-  input := Params{statePtr:&state, expandedKeyPtr:&expandedKey, numCols:4, c:c}
+  input := Params{statePtr:&state, expandedKeyPtr:expandedKeyPtr  , numCols:4, c:c}
 
   addRoundKeyChan <- &input
   _ = <-c
@@ -201,7 +201,7 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte,
       mixColumnChan <- &input
       _ = <-c
     }
-    temp := expandedKey[blockSize*i:blockSize*(i+1)]
+    temp := (*expandedKeyPtr)[blockSize*i:blockSize*(i+1)]
     input.expandedKeyPtr = &temp
     addRoundKeyChan <- &input
     _ = <-c
@@ -211,6 +211,7 @@ func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte,
     plaintext[i] = plaintext[i]^state[i]
   }
   (*wg).Done()
+  close(c)
 
 }
 
@@ -253,6 +254,7 @@ func main() {
   }
 
   expandedKey := expandKey(keyBytes, 176)
+  expandedKeyPtr := &expandedKey
 
   var nonce uint64 = 0xAAAAAAAAAAAAAAAA
   counter := 0
@@ -262,7 +264,7 @@ func main() {
   start := time.Now()
 
   for i := 0; i < len(state); i += blockSize {
-    go encrypt(nonce, uint64(counter), expandedKey, state[i:i+blockSize], &wg)
+    go encrypt(nonce, uint64(counter), expandedKeyPtr, state[i:i+blockSize], &wg)
     counter++
     wg.Add(1)
   }
