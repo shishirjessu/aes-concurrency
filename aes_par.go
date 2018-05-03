@@ -75,32 +75,33 @@ func expandKey(key []byte, numExpandedBytes int) []byte {
   return ret
 }
 
-func subBytesGoRout() {
-  for ;true; {
-    input := <-subBytesChan
+func subBytesGoRout(inputPtr *Params) {
+  // for ;true; {
+  input := *inputPtr
+    // input := <-subBytesChan
     state := *(input.statePtr)
-    c := input.c
+    // c := input.c
 
     for i := 0; i < len(state); i++ {
       state[i] = s_box[state[i]]
     }
-    c <- true
-  }
+    // c <- true
+    // }
 }
 
-func addRoundKey() {
-  for ;true; {
-    input := <- addRoundKeyChan
-
+func addRoundKey(inputPtr *Params) {
+  // for ;true; {
+    // input := <- addRoundKeyChan
+    input := *inputPtr
     state := *(input.statePtr)
     key := *(input.expandedKeyPtr)
-    c := input.c
+    // c := input.c
 
     for i := 0; i < len(state); i++ {
       state[i] = state[i]^key[i]
     }
-    c <- true
-  }
+    // c <- true
+  // }
 }
 
 func leftRotateByOne(state []byte, row int, size int)  {
@@ -114,19 +115,20 @@ func leftRotateByOne(state []byte, row int, size int)  {
   state[row] = temp
 }
 
-func shiftRows() {
-  for ;true; {
-    input := <-shiftRowsChan
+func shiftRows(inputPtr *Params) {
+  // for ;true; {
+  input := *inputPtr
+    // input := <-shiftRowsChan
     state := *(input.statePtr)
-    c := input.c
+    // c := input.c
 
     for i := 1; i <= 3; i++ {
       for k := 0; k < i; k++ {
         leftRotateByOne(state, i, 4)
       }
     }
-    c <- true
-  }
+    // c <- true
+  // }
 }
 
 func gmul(a byte, b byte) byte {
@@ -154,13 +156,13 @@ func mixSingleColumn(column []byte) {
 
 }
 
-func mixColumns() {
-  for ;true; {
-    input := <-mixColumnChan
-
+func mixColumns(inputPtr *Params) {
+  // for ;true; {
+    // input := <-mixColumnChan
+    input := *inputPtr
     state := *(input.statePtr)
     numCols := input.numCols
-    c := input.c
+    // c := input.c
 
     for i := 0; i < numCols; i++ {
       col := make([]byte, 4)
@@ -168,8 +170,8 @@ func mixColumns() {
       mixSingleColumn(col)
       copy(state[(i*4):((i+1)*4)], col[0:4])
     }
-    c <- true
-  }
+    // c <- true
+  // }
 }
 
 
@@ -186,25 +188,30 @@ func encrypt(nonce uint64, counter uint64, expandedKeyPtr *[]byte, plaintext []b
   c := make(chan bool)
   input := Params{statePtr:&state, expandedKeyPtr:expandedKeyPtr  , numCols:4, c:c}
 
-  addRoundKeyChan <- &input
-  _ = <-c
+  // addRoundKeyChan <- &input
+  addRoundKey(&input)
+  // _ = <-c
 
   for i := 1; i < 11; i++ {
 
-    subBytesChan <- &input
-    _ = <-c
+    // subBytesChan <- &input
+    subBytesGoRout(&input)
+    // _ = <-c
 
-    shiftRowsChan <- &input
-    _ = <-c
+    // shiftRowsChan <- &input
+    shiftRows(&input)
+    // _ = <-c
 
     if i != 10 {
-      mixColumnChan <- &input
-      _ = <-c
+      // mixColumnChan <- &input
+      mixColumns(&input)
+      // _ = <-c
     }
     temp := (*expandedKeyPtr)[blockSize*i:blockSize*(i+1)]
     input.expandedKeyPtr = &temp
-    addRoundKeyChan <- &input
-    _ = <-c
+    // addRoundKeyChan <- &input
+    addRoundKey(&input)
+    // _ = <-c
   }
 
   for i := 0; i < len(plaintext); i++ {
@@ -245,13 +252,14 @@ func main() {
     panic(err)
   }
   numWorkers := temp
+  print(numWorkers)
 
-  for i := 0; i < numWorkers; i++ {
-    go subBytesGoRout()
-    go shiftRows()
-    go mixColumns()
-    go addRoundKey()
-  }
+  // for i := 0; i < numWorkers; i++ {
+  //   go subBytesGoRout()
+  //   go shiftRows()
+  //   go mixColumns()
+  //   go addRoundKey()
+  // }
 
   expandedKey := expandKey(keyBytes, 176)
   expandedKeyPtr := &expandedKey
