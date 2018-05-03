@@ -131,21 +131,21 @@ func shiftRows(statePtr *[]byte) {
   }
 }
 
-func encrypt(nonce uint64, counter uint64, expandedKey []byte, plaintext []byte)  {
+func encrypt(nonce uint64, counter uint64, expandedKeyPtr *[]byte, plaintext []byte)  {
 
   state := make([]byte, 16)
 
   binary.LittleEndian.PutUint64(state[:8], counter)
   binary.LittleEndian.PutUint64(state[8:], nonce)
 
-  addRoundKey(&state, &expandedKey)
+  addRoundKey(&state, expandedKeyPtr)
   for i := 1; i < 11; i++ {
     subBytes(&state)
     shiftRows(&state)
     if i != 10 {
       mixColumns(&state, 4)
     }
-    temp := expandedKey[blockSize*i:blockSize*(i+1)]
+    temp := (*expandedKeyPtr)[blockSize*i:blockSize*(i+1)]
     addRoundKey(&state, &temp)
   }
 
@@ -180,6 +180,7 @@ func main() {
   }
 
   expandedKey := expandKey(keyBytes, 176)
+  expandedKeyPtr := &expandedKey
 
   var nonce uint64 = 0xAAAAAAAAAAAAAAAA
   counter := 0
@@ -187,7 +188,7 @@ func main() {
   start := time.Now()
 
   for i := 0; i < len(state); i += blockSize {
-    encrypt(nonce, uint64(counter), expandedKey, state[i:i+blockSize])
+    encrypt(nonce, uint64(counter), expandedKeyPtr, state[i:i+blockSize])
     counter++
   }
 
