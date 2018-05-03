@@ -17,22 +17,22 @@ for i in range(len(sizes)):
     size = sizes[i]
     temp = []
     for _ in range(10):
-        temp.append(float(check_output((rules[0] + types[0] + size), shell=True).decode()))
+        temp.append(float(check_output((rules[0] + types[0] + size), shell=True).decode().strip()))
     seq_times_c.append(sum(temp)/10)
 
     temp = []
     for _ in range(10):
-        temp.append(float(check_output((rules[0] + types[1] + size), shell=True).decode()))
+        temp.append(float(check_output((rules[0] + types[1] + size), shell=True).decode().strip()))
     par_times_c.append(sum(temp)/10)
 
     temp = []
     for _ in range(10):
-        temp.append(float(check_output((rules[1] + types[0] + size), shell=True).decode()))
+        temp.append(float(check_output((rules[1] + types[0] + size), shell=True).decode().strip()))
     seq_times_go.append(sum(temp)/10)
 
     temp = []
     for _ in range(10):
-        temp.append(float(check_output((rules[1] + types[1] + size), shell=True).decode()))
+        temp.append(float(check_output((rules[1] + types[1] + size), shell=True).decode().strip()))
     par_times_go.append(sum(temp)/10)
 
 
