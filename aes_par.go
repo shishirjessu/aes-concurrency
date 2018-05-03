@@ -227,7 +227,7 @@ func main() {
 	wg.Wait()
 
 	end := time.Now()
-  timems := (float64(end.Sub(start).Nanoseconds())/1000000.0)
+	timems := (float64(end.Sub(start).Nanoseconds()) / 1000000.0)
 	fmt.Printf("%f\n", timems)
 
 	// for i := 0; i < len(state); i++ {
