@@ -37,37 +37,32 @@ for i in range(len(sizes)):
     par_times_go.append(sum(temp)/10)
 
 
-c_baseline = seq_times_c[0]
-go_baseline = seq_times_go[0]
 
-seq_speedup_c = [c_baseline/thing for thing in seq_times_c]
-seq_speedup_go = [go_baseline/thing for thing in seq_times_go]
-
-par_speedup_c = [c_baseline/thing for thing in par_times_c]
-par_speedup_go = [go_baseline/thing for thing in par_times_go]
+par_speedup_c = [seq_times_c[i]/par_times_c[i] for i in range(len(par_times_c))]
+par_speedup_go = [seq_times_go[i]/par_times_go[i] for i in range(len(par_times_go))]
 
 f = open('output.txt', 'w+')
 
 f.write('seq times c\n')
 f.write(str(seq_times_c))
+f.write('\n')
 
 f.write('seq times go\n')
 f.write(str(seq_times_go))
+f.write('\n')
 
 f.write('par times c\n')
 f.write(str(par_times_c))
+f.write('\n')
 
 f.write('par times go\n')
 f.write(str(par_times_go))
-
-f.write('seq speedup c\n')
-f.write(str(seq_speedup_c))
-
-f.write('seq speedup go\n')
-f.write(str(seq_speedup_go))
+f.write('\n')
 
 f.write('par speedup c\n')
 f.write(str(par_speedup_c))
+f.write('\n')
 
 f.write('par speedup go\n')
 f.write(str(par_speedup_go))
+f.write('\n')
