@@ -247,7 +247,7 @@ void runAES(unsigned char* state, int stateLength, int blockSize, unsigned char*
   	int numThreadBlocks = (numBlocks + MAX_THREADS - 1) / MAX_THREADS;
   	int threadsPerBlock = numBlocks / numThreadBlocks;
 
-  	printf("num threads: %d %d %d\n", numThreadBlocks, threadsPerBlock, numThreadBlocks * threadsPerBlock);
+  	// printf("num threads: %d %d %d\n", numThreadBlocks, threadsPerBlock, numThreadBlocks * threadsPerBlock);
 
   	cudaEvent_t start, stop;
 	cudaEventCreate(&start);
