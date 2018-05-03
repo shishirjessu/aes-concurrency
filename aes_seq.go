@@ -8,7 +8,6 @@ import (
   "time"
 )
 
-var print = fmt.Println
 var blockSize = 16
 
 func subBytes(inputPtr *[]byte) {

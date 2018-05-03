@@ -5,18 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 )
 
-var print = fmt.Println
 var blockSize = 16
 
 var mixColumnChan = make(chan *Params)
-var subBytesChan = make(chan *Params)
-var shiftRowsChan = make(chan *Params)
-var addRoundKeyChan = make(chan *Params)
 
 func subBytes(statePtr *[]byte) {
 	state := *statePtr
