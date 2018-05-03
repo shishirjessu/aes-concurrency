@@ -220,9 +220,9 @@ func main() {
 	start := time.Now()
 
 	for i := 0; i < len(state); i += blockSize {
+		wg.Add(1)
 		go encrypt(nonce, uint64(counter), expandedKeyPtr, state[i:i+blockSize], &wg)
 		counter++
-		wg.Add(1)
 	}
 	wg.Wait()
 
