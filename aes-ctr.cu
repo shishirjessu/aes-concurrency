@@ -6,10 +6,10 @@
 void err_chk() {
 	cudaDeviceSynchronize();
 	cudaError_t err = cudaGetLastError();
-	if (err != cudaSuccess) 
+	if (err != cudaSuccess)
 		printf("Error: %s\n", cudaGetErrorString(err));
-	else
-		printf("%s\n", "cudaSuccess");
+	// else
+	// 	printf("%s\n", "cudaSuccess");
 }
 
 /* print out 16-byte block as grid */
@@ -40,7 +40,7 @@ __device__ unsigned char gmul (unsigned char a, unsigned char b) {
   if (b == 1) return a;
   if (b == 2) return d_gal2[a];
   if (b == 3) return d_gal3[a];
-  
+
   return 0;
 }
 
