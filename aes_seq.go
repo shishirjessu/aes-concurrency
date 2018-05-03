@@ -192,7 +192,8 @@ func main() {
   }
 
   end := time.Now()
-  fmt.Printf("%d\n", end.Sub(start).Nanoseconds())
+  timems := (float64(end.Sub(start).Nanoseconds())/1000000.0)
+  fmt.Printf("%f\n", timems)
 
   // for i := 0; i < len(state); i++ {
   //   fmt.Printf("%x ", state[i])
